@@ -5,34 +5,10 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
+#include "ndarray_backend_cpu.h"
 
 namespace needle {
 namespace cpu {
-
-#define ALIGNMENT 256
-#define TILE 8
-typedef float scalar_t;
-const size_t ELEM_SIZE = sizeof(scalar_t);
-
-
-/**
- * This is a utility structure for maintaining an array aligned to ALIGNMENT boundaries in
- * memory.  This alignment should be at least TILE * ELEM_SIZE, though we make it even larger
- * here by default.
- */
-struct AlignedArray {
-  AlignedArray(const size_t size) {
-    int ret = posix_memalign((void**)&ptr, ALIGNMENT, size * ELEM_SIZE);
-    if (ret != 0) throw std::bad_alloc();
-    this->size = size;
-  }
-  ~AlignedArray() { free(ptr); }
-  size_t ptr_as_int() {return (size_t)ptr; }
-  scalar_t* ptr;
-  size_t size;
-};
-
-
 
 void Fill(AlignedArray* out, scalar_t val) {
   /**
@@ -43,7 +19,66 @@ void Fill(AlignedArray* out, scalar_t val) {
   }
 }
 
+/**
+ * get slice according to index
+ * @param index
+ * @param compat_strides
+ * @param slice
+ */
+void GetGridIndex(size_t index,
+                  const std::vector<uint32_t>& compat_strides,
+                  std::vector<uint32_t>& grid_index) {
+    auto t_index = index;
+    for (auto compat_stride : compat_strides) {
+        uint32_t dim_index = t_index / compat_stride;
+        t_index = t_index % compat_stride;
+        grid_index.push_back(dim_index);
+    }
+}
 
+
+/**
+ * get the storage index
+ * @param grid_index
+ * @param strides
+ * @return
+ */
+size_t GetStorageIndex(const std::vector<uint32_t>& grid_index,
+                       const std::vector<uint32_t>& strides) {
+    size_t storage_index = 1;
+    for(auto i=0; i<grid_index.size(); i++) {
+        storage_index += grid_index[i] * strides[i];
+    }
+    return storage_index;
+}
+
+/**
+ *
+ * @param shape
+ * @param compat_strides
+ */
+void GetCompactStrides(const std::vector<uint32_t>& shape,
+                       size_t& elem_size,
+                       std::vector<uint32_t>& compat_strides) {
+    size_t stride = elem_size;
+    for(auto dim : shape) {
+        stride = stride/dim;
+        compat_strides.push_back((uint32_t) stride);
+    }
+}
+
+/**
+ * get the whole element size
+ * @param shape
+ * @return
+ */
+size_t GetElemSize(const std::vector<uint32_t>& shape) {
+    size_t elem_size = 1;
+    for(auto dim : shape) {
+        elem_size *= dim;
+    }
+    return elem_size;
+}
 
 
 void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> shape,
@@ -63,7 +98,16 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
    *  function will implement here, so we won't repeat this note.)
    */
   /// BEGIN YOUR SOLUTION
-  
+    size_t elem_size = GetElemSize(shape);
+    std::vector<uint32_t> compat_strides;
+    GetCompactStrides(shape, elem_size, compat_strides);
+    std::vector<uint32_t> grid_index;
+    for(size_t i=0; i<elem_size; i++) {
+        grid_index.clear();
+        GetGridIndex(i, compat_strides, grid_index);
+        auto storage_index = offset + GetStorageIndex(grid_index, strides);
+        out->ptr[i] = a.ptr[storage_index];
+    }
   /// END YOUR SOLUTION
 }
 

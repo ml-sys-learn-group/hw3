@@ -1,0 +1,7 @@
+.pytest_cache
+.ipynb_checkpoints
+cmake-build-debug
+build
+bin
+.env
+.idea
