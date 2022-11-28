@@ -79,7 +79,7 @@ namespace needle {
          * @param compat_strides
          */
         void GetCompactStrides(const std::vector<uint32_t>& shape,
-                               size_t& elem_size,
+                               const size_t& elem_size,
                                std::vector<uint32_t>& compat_strides);
 
 
@@ -89,6 +89,23 @@ namespace needle {
          * @return
          */
         size_t GetElemSize(const std::vector<uint32_t>& shape);
+
+
+        /**
+         * reduce max
+         * @param a
+         * @param out
+         * @param reduce_size
+        */
+        void ReduceMax(const AlignedArray& a, AlignedArray* out, size_t reduce_size);
+
+        /**
+         * reduce sum
+         * @param a
+         * @param out
+         * @param reduce_size
+        */
+        void ReduceSum(const AlignedArray& a, AlignedArray* out, size_t reduce_size);
     }
 }
 #endif // NDARRAY_BACKEND_CPU_H

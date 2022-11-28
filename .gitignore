@@ -5,3 +5,8 @@ build
 bin
 .env
 .idea
+
+.vscode
+__pycache__
+*.so
+*.dll
