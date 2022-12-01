@@ -4,10 +4,21 @@ project(needle C CXX)
 # find correct version of Python
 #execute_process(COMMAND python3-config --prefix
 #  OUTPUT_VARIABLE Python_ROOT_DIR)
-set(Python_ROOT_DIR /home/hzx/miniconda3/envs/needle-env)
-set(PYTHON_LIB_PATH ${Python_ROOT_DIR}/lib)
-set(PYTHON_INCLUDE_PATH ${Python_ROOT_DIR}/include/python3.8)
-set(PYBIND_INCLUDE_PATH ${Python_ROOT_DIR}/lib/python3.8/site-packages/pybind11/include)
+# 
+if(UNIX)
+  set(Python_ROOT_DIR /home/hzx/miniconda3/envs/needle-env)
+  set(PYTHON_LIB_PATH ${Python_ROOT_DIR}/lib)
+  set(PYTHON_INCLUDE_PATH ${Python_ROOT_DIR}/include/python3.8)
+  set(PYBIND_INCLUDE_PATH ${Python_ROOT_DIR}/lib/python3.8/site-packages/pybind11/include)
+elseif (WIN32)
+  set(Python_ROOT_DIR C:/Users/toofo/anaconda3/envs/needle-env)
+  set(PYTHON_LIB_PATH ${Python_ROOT_DIR}/)
+  set(PYTHON_INCLUDE_PATH ${Python_ROOT_DIR}/include/)
+  set(PYBIND_INCLUDE_PATH ${Python_ROOT_DIR}/Lib/site-packages/pybind11/include)
+elseif (APPLE)
+  # TODO
+  set(Python_ROOT_DIR C:/Users/toofo/anaconda3/envs/needle-env)
+endif()
 
 message(STATUS ${Python_ROOT_DIR})
 
