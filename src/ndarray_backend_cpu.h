@@ -5,13 +5,22 @@
 #ifndef NDARRAY_BACKEND_CPU_H
 #define NDARRAY_BACKEND_CPU_H
 
+// compatible to msvc
+#ifdef _WIN32
+#define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ?0 :errno)
+#define posix_memalign_free _aligned_free
+#else
+#define posix_memalign_free free
+#endif
+
 namespace needle {
     namespace cpu {
 
-#define ALIGNMENT 256
-#define TILE 8
-        typedef float scalar_t;
-        const size_t ELEM_SIZE = sizeof(scalar_t);
+    #define ALIGNMENT 256
+    #define TILE 8
+
+    typedef float scalar_t;
+    const size_t ELEM_SIZE = sizeof(scalar_t);
 
         /**
          * This is a utility structure for maintaining an array aligned to ALIGNMENT boundaries in
@@ -25,7 +34,7 @@ namespace needle {
                 this->size = size;
             }
 
-            ~AlignedArray() { free(ptr); }
+            ~AlignedArray() { posix_memalign_free(ptr); }
 
             size_t ptr_as_int() { return (size_t) ptr; }
 
