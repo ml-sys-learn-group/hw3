@@ -378,6 +378,46 @@ void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uin
   /// END YOUR SOLUTION
 }
 
+#ifdef _WIN32
+inline void AlignedDot(const float* __restrict a,
+                       const float* __restrict b,
+                       float* __restrict out) {
+
+  /**
+   * Multiply together two TILE x TILE matrices, and _add _the result to out (it is important to add
+   * the result to the existing out, which you should not set to zero beforehand).  We are including
+   * the compiler flags here that enable the compile to properly use vector operators to implement
+   * this function.  Specifically, the __restrict__ keyword indicates to the compile that a, b, and
+   * out don't have any overlapping memory (which is necessary in order for vector operations to be
+   * equivalent to their non-vectorized counterparts (imagine what could happen otherwise if a, b,
+   * and out had overlapping memory).  Similarly the __builtin_assume_aligned keyword tells the
+   * compiler that the input array will be aligned to the appropriate blocks in memory, which also
+   * helps the compiler vectorize the code.
+   *
+   * Args:
+   *   a: compact 2D array of size TILE x TILE
+   *   b: compact 2D array of size TILE x TILE
+   *   out: compact 2D array of size TILE x TILE to write to
+   */
+
+  a = (const float*)__builtin_assume_aligned(a, TILE * ELEM_SIZE);
+  b = (const float*)__builtin_assume_aligned(b, TILE * ELEM_SIZE);
+  out = (float*)__builtin_assume_aligned(out, TILE * ELEM_SIZE);
+
+  /// BEGIN YOUR SOLUTION
+  for(auto i=0; i<TILE; i++) {
+    for(auto j=0; j<TILE; j++) {
+      auto out_index = i * TILE + j;
+      for(auto k=0; k<TILE; k++) {
+        auto index_ik = i * TILE + k;
+        auto index_kj = k * TILE + j;
+        out[out_index] += a[index_ik] * b[index_kj];
+      }
+    }
+  }
+  /// END YOUR SOLUTION
+}
+#else
 inline void AlignedDot(const float* __restrict__ a,
                        const float* __restrict__ b,
                        float* __restrict__ out) {
@@ -416,6 +456,7 @@ inline void AlignedDot(const float* __restrict__ a,
   }
   /// END YOUR SOLUTION
 }
+#endif
 
 void MatmulTiled(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uint32_t m,
                  uint32_t n, uint32_t p) {

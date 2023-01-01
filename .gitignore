@@ -10,3 +10,4 @@ bin
 __pycache__
 *.so
 *.dll
+*.pyd

@@ -12,7 +12,7 @@ if(UNIX)
   set(PYBIND_INCLUDE_PATH ${Python_ROOT_DIR}/lib/python3.8/site-packages/pybind11/include)
 elseif (WIN32)
   set(Python_ROOT_DIR C:/Users/toofo/anaconda3/envs/needle-env)
-  set(PYTHON_LIB_PATH ${Python_ROOT_DIR}/)
+  set(PYTHON_LIB_PATH ${Python_ROOT_DIR}/libs)
   set(PYTHON_INCLUDE_PATH ${Python_ROOT_DIR}/include/)
   set(PYBIND_INCLUDE_PATH ${Python_ROOT_DIR}/Lib/site-packages/pybind11/include)
 elseif (APPLE)
@@ -35,14 +35,13 @@ endif()
 
 include_directories(SYSTEM ${PYBIND_INCLUDE_PATH})
 list(APPEND LINKER_LIBS ${PYTHON_LIB_PATH})
+link_directories(${LINKER_LIBS})
 
 
 ###################
 ### CPU BACKEND ###
 ###################
 add_library(ndarray_backend_cpu MODULE src/ndarray_backend_cpu.cc src/ndarray_backend_cpu.h)
-#target_link_libraries(ndarray_backend_cpu PUBLIC )
-
 
 # directly output to ffi folder
 set_target_properties(ndarray_backend_cpu
@@ -76,10 +75,16 @@ if(CUDA_FOUND)
     CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 3.7)
   endif()
 
+  set(
+    CUDA_NVCC_FLAGS
+    ${CUDA_NVCC_FLAGS};
+    --extended-lambda
+    -O3
+  )
+
   # set arch flags properly
   CUDA_ADD_LIBRARY(ndarray_backend_cuda MODULE src/ndarray_backend_cuda.cu OPTIONS ${ARCH_FLAGS})
 
-  target_link_libraries(ndarray_backend_cuda ${LINKER_LIBS})
   # pybind11_extension(ndarray_backend_cuda)
   # pybind11_strip(ndarray_backend_cuda)
 
@@ -111,9 +116,25 @@ link_directories(
 
 enable_testing()
 add_executable(ndarray_backend_test src/ndarray_backend_cpu.cc tests/ndarray_backend_cpu_test.cpp src/ndarray_backend_cpu.h)
-target_link_libraries(ndarray_backend_test gtest python3.8)
+target_link_libraries(ndarray_backend_test gtest python38)
 
 include(GoogleTest)
 gtest_discover_tests(ndarray_backend_test)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+
+
+# add custom command for windows
+if (WIN32)
+  add_custom_command(
+    TARGET ndarray_backend_cpu POST_BUILD
+    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/sbin/copy_win_pyd.py 0
+    VERBATIM
+  )
+
+  add_custom_command(
+    TARGET ndarray_backend_cuda POST_BUILD
+    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/sbin/copy_win_pyd.py 1
+    VERBATIM
+  )
+endif()
